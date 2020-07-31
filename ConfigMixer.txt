@@ -1,6 +1,8 @@
 Master
-Other
 Spotify.exe
-Discord.exe
 firefox.exe
+Discord.exe
 RocketLeague.exe,ModernWarfare.exe,NMS.exe
+Other
+Spare1
+Spare2

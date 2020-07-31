@@ -3,5 +3,7 @@ class Constants:
     BAUDRATE = 9600
     COM = "COM10"
     CONFIG_NAME = "ConfigMixer.txt"
-    PINS_USED = 1
+    PINS_USED = 8
+    ADC_RES = 10 #bits
+    ADC_MAX_LEVEL = 1023
 
