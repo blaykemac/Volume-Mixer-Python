@@ -1,0 +1,9 @@
+Master
+Other
+Spotify.exe
+Discord.exe
+firefox.exe
+Games
+-RocketLeague.exe
+-ModernWarfare.exe
+-NMS.exe
