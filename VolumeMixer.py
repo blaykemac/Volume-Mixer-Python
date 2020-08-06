@@ -106,6 +106,11 @@ def main():
     serial_interface.reset_input_buffer()
     print(serial_read) #debug only
     
+    #Initialise master output
+    devices = AudioUtilities.GetSpeakers()
+    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+    volume = cast(interface, POINTER(IAudioEndpointVolume))
+    
     while True:
     
         time.sleep(0.1) # Sleep for 10ms until next sensor reading
@@ -133,13 +138,10 @@ def main():
             for pin in pins:
                 if (new_values[pin.get_pin_index()] != old_values[pin.get_pin_index()]):
                 #If this the master channel that needs updating
-                    if (pin.get_pin_name == Constants.PIN_MASTER_STRING):
-                        devices = AudioUtilities.GetSpeakers()
-                        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-                        volume = cast(interface, POINTER(IAudioEndpointVolume))
+                    if (pin.get_pin_index() == Constants.PIN_MASTER):
                         volume.SetMasterVolumeLevelScalar(pin_values_normal[0], None)
                     
-                    elif (pin.get_pin_name == Constants.PIN_OTHER_STRING):
+                    elif (pin.get_pin_index == Constants.PIN_OTHER):
                         #Need to complete later
                         pass
                         
