@@ -6,4 +6,7 @@ class Constants:
     PINS_USED = 8
     ADC_RES = 10 #bits
     ADC_MAX_LEVEL = 1023
-
+    PIN_MASTER = 0
+    PIN_MASTER_STRING = "Master"
+    PIN_OTHER = 5
+    PIN_OTHER_STRING = "Other"

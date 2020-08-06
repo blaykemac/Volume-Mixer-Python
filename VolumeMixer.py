@@ -27,6 +27,9 @@ class Pin:
         self.name = name
         self.pin = pin
         self.processes = processes
+
+    def get_pin_name(self):
+        return self.name
     
     def get_pin_index(self):
         return self.pin
@@ -34,8 +37,12 @@ class Pin:
     def get_processes(self):
         return self.processes
     
-    def set_process_volume(self, session):
-        pass
+    def set_process_volume(self, session, level):
+        volume = session._ctl.QueryInterface(ISimpleAudioVolume)
+        #print(session)
+        #print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
+        volume.SetMasterVolume(level, None)
+
         
 class ConfigParser:
     def __init__(self, config_name):
@@ -50,6 +57,7 @@ class ConfigParser:
     def get_pins(self):
         return self.config
         
+        
 class PinCreator:
 
     def __init__(self, pin_list):
@@ -59,8 +67,12 @@ class PinCreator:
 
     def create_pins(self):
         for pin_index in range(len(self.pin_list)):
-            #if (self.pin_list[pin_index] # 
-            pin = Pin(pin_index, self.pin_list[pin_index])
+            #
+            if pin_index == Constants.PIN_MASTER:
+                pin = Pin(pin_index, self.pin_list[pin_index], Constants.PIN_MASTER_STRING)
+                
+            else:
+                pin = Pin(pin_index, self.pin_list[pin_index])
             self.pins.append(pin)
     
     def get_pins(self):
@@ -96,52 +108,47 @@ def main():
     
     while True:
     
-        time.sleep(0.25) # Sleep for 10ms until next sensor reading
+        time.sleep(0.1) # Sleep for 10ms until next sensor reading
         
         # READ SERIAL PORT
         serial_read = serial_interface.readline()
         #serial_interface.reset_input_buffer()
+        print(serial_read) #debug only
+        
+        #If we receive an empty string
         if serial_read == "":
             print("strings are same")
             continue
-        print(serial_read) #debug only
-        new_values = serial_decoder.decode_serial_string(serial_read)
-        normalised_values_float = [utility.normalise(ADC_level,Constants.ADC_MAX_LEVEL) for ADC_level in new_values]
-        
-        if (new_values == old_values):
-            # Then don't adjust volume
-            continue
             
+        
         else:
+            #Extract the desired volume level
+            new_values = serial_decoder.decode_serial_string(serial_read)
+            pin_values_normal = [utility.normalise(ADC_level,Constants.ADC_MAX_LEVEL) for ADC_level in new_values]
         
-            # Update all current audio applications
-            
-            # Change the master volume
+            # Update list of all current audio applications
+            sessions = [session for session in AudioUtilities.GetAllSessions() if session.Process] #Make sure session exists
+               
+            #Iterate all pins and check if they need to be updated
             for pin in pins:
-                pass
-                
-            devices = AudioUtilities.GetSpeakers()
-            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            volume = cast(interface, POINTER(IAudioEndpointVolume))
-            volume.SetMasterVolumeLevelScalar(normalised_values_float[0], None) #Hard coded master but might remove 
-
-
-            # Change the processes not affected by other
-            
-            
-            # Check for individual processes and adjust according to the pin the process belongs to
-            
-            sessions = AudioUtilities.GetAllSessions()
-            session_names = [[session, session.Process.name()] for session in sessions if session.Process]
-            
-            for session_pair in session_names:
-                for pin in pins:
-                    if (session_pair[1] in pin.get_processes()):
-                        volume = session_pair[0]._ctl.QueryInterface(ISimpleAudioVolume)
-                        #print(session_pair[1])
-                        #print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
-                        volume.SetMasterVolume(normalised_values_float[pin.get_pin_index()], None)
+                if (new_values[pin.get_pin_index()] != old_values[pin.get_pin_index()]):
+                #If this the master channel that needs updating
+                    if (pin.get_pin_name == Constants.PIN_MASTER_STRING):
+                        devices = AudioUtilities.GetSpeakers()
+                        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                        volume = cast(interface, POINTER(IAudioEndpointVolume))
+                        volume.SetMasterVolumeLevelScalar(pin_values_normal[0], None)
                     
+                    elif (pin.get_pin_name == Constants.PIN_OTHER_STRING):
+                        #Need to complete later
+                        pass
+                        
+                    else:
+                        for session in sessions:
+                            if (session.Process.name() in pin.get_processes()):
+                                pin.set_process_volume(session, pin_values_normal[pin.get_pin_index()])
+                        
+
             old_values = new_values
             
         
