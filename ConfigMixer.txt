@@ -2,7 +2,7 @@ Master
 Spotify.exe
 firefox.exe
 Discord.exe
-RocketLeague.exe,ModernWarfare.exe,NMS.exe
+RocketLeague.exe,ModernWarfare.exe,NMS.exe,MCC-Win64-Shipping-WinStore.exe,bfv.exe
 Other
 Spare1
 Spare2
