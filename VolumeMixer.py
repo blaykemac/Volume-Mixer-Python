@@ -27,6 +27,8 @@ class Pin:
         self.name = name
         self.pin = pin
         self.processes = processes
+        self.mute = False
+        self.volume = 0
 
     def get_pin_name(self):
         return self.name
@@ -42,6 +44,13 @@ class Pin:
         #print(session)
         #print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
         volume.SetMasterVolume(level, None)
+        
+    def process_mute(self):
+        if self.mute:
+            pass
+        else:
+            pass
+            
 
         
 class ConfigParser:
@@ -99,7 +108,7 @@ def main():
     # Enter infinite loop where we constantly check the serial port and change volume if needed
     
     # Initialise zeroes list 
-    old_values = [0 for pin in range(Constants.PINS_USED)]
+    old_values = [0 for pin in range(2*Constants.PINS_USED)]
     
     # Flush junk from buffer before intial decode
     serial_read = serial_interface.readline()
