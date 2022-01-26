@@ -8,10 +8,11 @@ from ctypes import POINTER, cast
 from comtypes import CLSCTX_ALL
 
 class Utilities:
-    def __init__(self):
-        pass
+    #def __init__(self):
+        #pass
     
-    def normalise(self, value, normal_value):
+    #def normalise(self, value, normal_value):
+    def normalise(value, normal_value):
         return value / normal_value
         
 
@@ -29,6 +30,7 @@ class Pin:
         self.processes = processes
         self.mute = False
         self.volume = 0
+        self.setup = True
 
     def get_pin_name(self):
         return self.name
@@ -45,13 +47,20 @@ class Pin:
         #print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
         volume.SetMasterVolume(level, None)
         
+    def set_process_mute(self, session, level):
+        volume = session._ctl.QueryInterface(ISimpleAudioVolume)
+        #print(session)
+        #print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
+        volume.SetMute(level, None)
+        
 
     def update(self, slider_value, mute_value, volume_interface, sessions):
-        if slider_value != self.volume:
-            self.volume = slider_value
-            volume_normalised = utility.normalise(slider_value,Constants.ADC_MAX_LEVEL
+        if slider_value != self.volume or self.setup:
             
-            if (self.pin.get_pin_index() == Constants.PIN_MASTER):
+            self.volume = slider_value
+            volume_normalised = Utilities.normalise(slider_value, Constants.ADC_MAX_LEVEL)
+            
+            if (self.get_pin_index() == Constants.PIN_MASTER):
                 volume_interface.SetMasterVolumeLevelScalar(volume_normalised, None)
                 
             #elif (pin.get_pin_index == Constants.PIN_OTHER):
@@ -60,9 +69,30 @@ class Pin:
                 
             else:
                 for session in sessions:
-                    if (session.Process.name() in self.pin.get_processes()):
-                        pin.set_process_volume(session, volume_normalised)
+                    if (session.Process.name() in self.get_processes()):
+                        self.set_process_volume(session, volume_normalised)
+                        
+
+        
+        if mute_value != int(self.mute) or self.setup:
+            
+            self.mute = bool(mute_value)
+            
+            if self.setup:
+                self.setup = False
+                
     
+            if (self.get_pin_index() == Constants.PIN_MASTER):
+                    volume_interface.SetMute(mute_value, None)
+                    
+                #elif (pin.get_pin_index == Constants.PIN_OTHER):
+                    #Need to complete later
+                    #pass
+                    
+            else:
+                for session in sessions:
+                    if (session.Process.name() in self.get_processes()):
+                        self.set_process_mute(session, mute_value)
 
 class ConfigParser:
     def __init__(self, config_name):
@@ -150,12 +180,16 @@ def main():
             
             pin_values = message[0:8]
             pin_mutes = message[8::]
+            pin_mutes = [(1 + val) % 2 for val in pin_mutes]
         
             # Update list of all current audio applications
             sessions = [session for session in AudioUtilities.GetAllSessions() if session.Process] #Make sure session exists
                
             #Iterate all pins and check if they need to be updated
             for index, pin in enumerate(pins):
+                #print(index, pin)
+                #print(pins)
+                print("mute" + str(pin_mutes[index]))
                 pin.update(pin_values[index], pin_mutes[index], volume, sessions)
                 
 
