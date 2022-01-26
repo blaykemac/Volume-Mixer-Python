@@ -45,14 +45,25 @@ class Pin:
         #print("volume.GetMasterVolume(): %s" % volume.GetMasterVolume())
         volume.SetMasterVolume(level, None)
         
-    def process_mute(self):
-        if self.mute:
-            pass
-        else:
-            pass
-            
 
-        
+    def update(self, slider_value, mute_value, volume_interface, sessions):
+        if slider_value != self.volume:
+            self.volume = slider_value
+            volume_normalised = utility.normalise(slider_value,Constants.ADC_MAX_LEVEL
+            
+            if (self.pin.get_pin_index() == Constants.PIN_MASTER):
+                volume_interface.SetMasterVolumeLevelScalar(volume_normalised, None)
+                
+            #elif (pin.get_pin_index == Constants.PIN_OTHER):
+                #Need to complete later
+                #pass
+                
+            else:
+                for session in sessions:
+                    if (session.Process.name() in self.pin.get_processes()):
+                        pin.set_process_volume(session, volume_normalised)
+    
+
 class ConfigParser:
     def __init__(self, config_name):
         self.config_name = config_name
@@ -107,9 +118,6 @@ def main():
     
     # Enter infinite loop where we constantly check the serial port and change volume if needed
     
-    # Initialise zeroes list 
-    old_values = [0 for pin in range(2*Constants.PINS_USED)]
-    
     # Flush junk from buffer before intial decode
     serial_read = serial_interface.readline()
     serial_interface.reset_input_buffer()
@@ -126,6 +134,7 @@ def main():
         
         # READ SERIAL PORT
         serial_read = serial_interface.readline()
+        
         #serial_interface.reset_input_buffer()
         print(serial_read) #debug only
         
@@ -137,32 +146,18 @@ def main():
         
         else:
             #Extract the desired volume level
-            new_values = serial_decoder.decode_serial_string(serial_read)
-            pin_values_normal = [utility.normalise(ADC_level,Constants.ADC_MAX_LEVEL) for ADC_level in new_values]
+            message = serial_decoder.decode_serial_string(serial_read) # assume data is [slider0, .., slider7, switch0, .., switch7]
+            
+            pin_values = message[0:8]
+            pin_mutes = message[8::]
         
             # Update list of all current audio applications
             sessions = [session for session in AudioUtilities.GetAllSessions() if session.Process] #Make sure session exists
                
             #Iterate all pins and check if they need to be updated
-            for pin in pins:
-                if (new_values[pin.get_pin_index()] != old_values[pin.get_pin_index()]):
-                #If this the master channel that needs updating
-                    if (pin.get_pin_index() == Constants.PIN_MASTER):
-                        volume.SetMasterVolumeLevelScalar(pin_values_normal[0], None)
-                    
-                    elif (pin.get_pin_index == Constants.PIN_OTHER):
-                        #Need to complete later
-                        pass
-                        
-                    else:
-                        for session in sessions:
-                            if (session.Process.name() in pin.get_processes()):
-                                pin.set_process_volume(session, pin_values_normal[pin.get_pin_index()])
-                        
-
-            old_values = new_values
-            
-        
+            for index, pin in enumerate(pins):
+                pin.update(pin_values[index], pin_mutes[index], volume, sessions)
+                
 
 
 if __name__ == "__main__":
