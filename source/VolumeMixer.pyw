@@ -182,7 +182,7 @@ def main():
             serial_read = serial_interface.readline()
             serial_interface.reset_input_buffer()
     
-            while True:
+            while not exit_signalled:
             
                 time.sleep(0.05) # Sleep for 50ms before checking for next sensor reading
                 
