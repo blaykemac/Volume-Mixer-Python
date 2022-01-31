@@ -6,6 +6,8 @@ from MixerConstants import *
 #from Channel import Pin
 from ctypes import POINTER, cast
 from comtypes import CLSCTX_ALL
+from infi.systray import SysTrayIcon # used for windows system tray
+import sys
 
 class Utilities:
     """
@@ -132,8 +134,26 @@ class PinCreator:
     def get_pins(self):
         return self.pins
 
+def on_quit_callback(systray):
+    #systray.shutdown()
+    #sys.exit(0)
+    global exit_signalled
+    exit_signalled = True
+
 def main():
 
+    # Setup windows system tray icon
+    
+    def say_hello(systray): print("Hello, World!")
+    #menu_options = (("Say Hello", None, say_hello),)
+    
+    #systray = SysTrayIcon("icon.ico", "Volume Mixer", menu_options, on_quit=on_quit_callback)
+    """
+    menu_options = ()
+    systray = SysTrayIcon("icon.ico", "Volume Mixer", menu_options)
+    systray.start()
+    """
+    
     # Parse configuration file and determine hardware to software pin mapping
     parser = ConfigParser(Constants.CONFIG_NAME)
     pin_creator = PinCreator(parser.get_pins())
@@ -150,8 +170,10 @@ def main():
     interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
     volume = cast(interface, POINTER(IAudioEndpointVolume))
     
+    global exit_signalled
+    
     # Loop continuously trying to connect to serial port. If successful, start reading serial values
-    while True:
+    while not exit_signalled:
         try:
             # Connect for first time or try reconnecting if connection failed previously
             serial_interface = serial.Serial(Constants.COM, Constants.BAUDRATE)
@@ -199,5 +221,11 @@ def main():
 
 
 if __name__ == "__main__":
+    exit_signalled = False
+    menu_options = ()
+    #systray = SysTrayIcon("icon.ico", "Volume Mixer", menu_options)
+    systray = SysTrayIcon("VolumeIcon.ico", "Volume Mixer", menu_options, on_quit=on_quit_callback)
+    systray.start()
     main()
+
 
